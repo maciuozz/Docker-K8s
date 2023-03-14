@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flask-app
+  template:
+    metadata:
+      labels:
+        app: flask-app
+    spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - mysql-lab
+              topologyKey: "kubernetes.io/hostname"
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - flask-app
+              topologyKey: "kubernetes.io/hostname"
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox
+        env:
+        - name: MY_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: MY_HOST
+        command:
+        - "sh"
+        - "-c"
+        - |
+          CURRENT_NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+          until nslookup $MY_HOST.$CURRENT_NAMESPACE.svc.cluster.local; do 
+            echo "Waiting for $MY_HOST service..."
+            sleep 2
+          done
+      containers:
+      - name: flask
+        image: maciuozz/flaskimage
+        ports:
+        - containerPort: 5000
+        env:
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: FLASK_ENV
+        - name: MY_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: MY_HOST
+        - name: MY_DB
+          valueFrom:
+            configMapKeyRef:
+              name: configmap
+              key: MY_DB
+        - name: MY_USER
+          valueFrom:
+            secretKeyRef:
+              name: flask-secret
+              key: username
+        - name: MY_PWD
+          valueFrom:
+            secretKeyRef:
+              name: flask-secret
+              key: password
+       

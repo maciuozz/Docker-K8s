@@ -1,0 +1,53 @@
+<html>
+  <head>
+    <title>Counter Application</title>
+    <style>
+      body {
+        background-color: black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      h1 {
+        font-size: 48px;
+        color: white;
+        text-align: center;
+        margin-bottom: 50px;
+      }
+
+      .counter-container {
+        background-color: rgba(0, 0, 0, 0.858);
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px 2px lightgray;
+        border: 10px solid rgba(255, 255, 0, 0.836);
+      }
+
+      .counter {
+        font-size: 36px;
+        color: white;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .colored-text span {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="counter-container">
+      <h1>
+        <span class="colored-text">
+          <span style="color: green">Welcome</span>
+          <span style="color: blue">to</span>
+          <span style="color: yellow">the</span>
+          <span style="color: red">Counter</span>
+          <span style="color: purple">Application</span>
+        </span>
+      </h1>
+      <p class="counter">{{ message }}</p>
+    </div>
+  </body>
+</html>

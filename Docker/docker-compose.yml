@@ -1,0 +1,19 @@
+
+services:
+  app:
+    env_file: env-app
+    build: .
+    ports:
+     - 5500:5000
+    depends_on:
+      - db01
+  db01:
+    env_file: env-db
+    image: mysql:8.0
+    volumes:
+     - ./db.sh:/docker-entrypoint-initdb.d/db.sh
+     - mysql-data:/var/lib/mysql
+
+volumes:
+ mysql-data:
+

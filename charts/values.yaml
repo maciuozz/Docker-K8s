@@ -1,0 +1,66 @@
+
+flask_replica: 1
+mysql_replica: 1
+
+enable_flask_PodAffinity: true
+enable_flask_PodAntiAffinity: true
+enable_mysql_PodAffinity: true
+
+
+secrets:
+    rootpassword: "cm9vdDEyMzQ="
+    username: "Zmxhc2t1c2Vy"
+    password: "cGF0b2RlZ29tYQ=="
+
+
+configmap:
+  FLASK_ENV: development
+  MY_HOST: 
+  MY_DB: contador-db
+  db_script: |
+    #!/bin/bash
+
+    mysql -u root --password=$MYSQL_ROOT_PASSWORD <<EOS
+    USE $MYSQL_DATABASE;
+    CREATE TABLE tabla_contador (contador int NOT NULL);
+    INSERT INTO tabla_contador VALUES (0);
+    EOS
+
+image:
+  rep_flask: maciuozz/flaskimage
+  tag_flask: latest
+  rep_mysql: maciuozz/mysqlimage
+  tag_mysql: '8.0'
+
+
+service:
+  flask_service: ClusterIP
+  flask_port: 80                #Si su valor se cambia se tiene que modificar tambien el valor de ingress.ingress_port
+  
+
+ingress:
+  enabled: true                 
+  ingress_port: 80               #Si su valor se cambia se tiene que modificar tambien el valor de service.flask_port.
+  ingress_host:                  #[Ip externa del servicio 'ingress-nginx-controller'].nip.io
+  ingress_controller: "nginx"    
+  path: /                        #Permite cambiar la ruta de acceso a la aplicación .
+
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+  
+  
+
+ 
+
+
+    
+
+
+
+
+

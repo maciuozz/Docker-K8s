@@ -1,0 +1,93 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "devops7.fullname" . }}-flask-deployment
+  labels:
+    {{- include "devops7.labels" . | nindent 4 }}
+    layer: flask_app
+spec:
+  replicas: {{ .Values.flask_replica }}
+  selector:
+    matchLabels:
+      {{- include "devops7.selectorLabels" . | nindent 6 }}
+      layer: flask_app
+  template:
+    metadata:
+      labels:
+        {{- include "devops7.selectorLabels" . | nindent 8 }}
+        layer: flask_app
+    spec: 
+      affinity:
+      {{- if .Values.enable_flask_PodAffinity }}
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "devops7.selectorLabels" . | nindent 18 }} 
+                  layer: mysql
+              topologyKey: "kubernetes.io/hostname"
+      {{- end }}
+        {{- if .Values.enable_flask_PodAntiAffinity }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "devops7.selectorLabels" . | nindent 18 }}
+                  layer: flask-app
+              topologyKey: "kubernetes.io/hostname"
+        {{- end }}
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox
+        env:
+        - name: MY_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "devops7.fullname" . }}-configmap
+              key: MY_HOST
+        command:
+        - "sh"
+        - "-c"
+        - |
+          CURRENT_NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+          until nslookup $MY_HOST.$CURRENT_NAMESPACE.svc.cluster.local; do 
+            echo "Waiting for $MY_HOST service..."
+            sleep 2
+          done
+      containers:
+      - name: flask
+        image: {{ .Values.image.rep_flask }}:{{ .Values.image.tag_flask }}
+        ports:
+        - containerPort: 5000
+        env:
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "devops7.fullname" . }}-configmap
+              key: FLASK_ENV
+        - name: MY_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "devops7.fullname" . }}-configmap
+              key: MY_HOST
+        - name: MY_DB
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "devops7.fullname" . }}-configmap
+              key: MY_DB
+        - name: MY_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "devops7.fullname" . }}-secret1
+              key: username
+        - name: MY_PWD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "devops7.fullname" . }}-secret1
+              key: password
+

@@ -1,0 +1,99 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops7.fullname" . }}-mysql-headless
+spec:
+  clusterIP: None
+  selector:
+    {{- include "devops7.selectorLabels" . | nindent 4 }}
+    layer: mysql
+  ports:
+  - name: mysql
+    port: 3306
+    targetPort: 3306
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "devops7.fullname" . }}-mysql-statefulset
+  labels:
+    {{- include "devops7.labels" . | nindent 4 }}
+    layer: mysql
+spec:
+  serviceName: {{ include "devops7.fullname" . }}-mysql-clusterip
+  replicas: {{ .Values.mysql_replica }}
+  selector:
+    matchLabels:
+      {{- include "devops7.selectorLabels" . | nindent 6 }}
+      layer: mysql
+  template:
+    metadata:
+      labels:
+        {{- include "devops7.selectorLabels" . | nindent 8 }}
+        layer: mysql
+    spec:
+      affinity:
+        {{- if .Values.enable_mysql_PodAffinity }}
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "devops7.selectorLabels" . | nindent 18 }}
+                  layer: flask-app
+              topologyKey: "kubernetes.io/hostname"
+        {{- end }}
+      containers:
+        - name: mysql
+          image: {{ .Values.image.rep_mysql }}:{{ .Values.image.tag_mysql }}
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "devops7.fullname" . }}-secret2
+                  key: root_password
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "devops7.fullname" . }}-configmap
+                  key: MY_DB
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "devops7.fullname" . }}-secret1
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "devops7.fullname" . }}-secret1
+                  key: password
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: script-volume
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: false
+      volumes:
+        - name: script-volume
+          configMap:
+            name: {{ include "devops7.fullname" . }}-configmap
+            items:
+              - key: db.sh
+                path: db.sh
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+
+
+

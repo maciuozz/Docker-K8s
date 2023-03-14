@@ -1,0 +1,7 @@
+
+#Variables de entorno.
+
+MY_DB=contador-db
+MY_USER=flaskuser
+MY_PWD=patodegoma
+MY_HOST=db01

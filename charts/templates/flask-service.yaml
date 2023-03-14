@@ -1,0 +1,17 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops7.fullname" . }}-flask-service
+  labels:
+    {{- include "devops7.labels" . | nindent 4 }}
+    layer: flask_service
+spec:
+  type: {{ .Values.service.flask_service }}
+  ports:
+    - port: {{ .Values.service.flask_port }} 
+      targetPort: 5000
+      name: http
+  selector:
+    {{- include "devops7.selectorLabels" . | nindent 4 }}
+    layer: flask_app

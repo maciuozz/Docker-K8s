@@ -1,0 +1,98 @@
+
+#El 'headless service' no tiene una dirección IP asignada a sí mismo y en su lugar devuelve las direcciones IP de los 
+#pods individuales detrás del servicio cuando se consulta su nombre de DNS. Esto es útil cuando se ejecutan aplicaciones
+#que necesitan conectarse a cada uno de los pods individualmente, como una base de datos. 
+#'Headless' garantiza que cada pod de la base de datos tenga su propia dirección IP única, lo que facilita la conexión 
+#directa de los clientes con cada pod. Además, los pods individuales también pueden tener configuraciones y datos de base 
+#de datos únicos que no se pueden compartir fácilmente entre ellos, lo que hace que el uso de un headless service sea 
+#aún más importante en este escenario.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-headless-service
+spec:
+  clusterIP: None
+  selector:
+    app: mysql-lab
+  ports:
+  - name: mysql
+    port: 3306
+    targetPort: 3306
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-statefulset
+spec:
+  serviceName: mysql-clusterip
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-lab
+  template:
+    metadata:
+      labels:
+        app: mysql-lab
+    spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - flask-app
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: mysql
+          image: maciuozz/mysqlimage:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root_password
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: configmap
+                  key: MY_DB
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: flask-secret
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: flask-secret
+                  key: password
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: script-volume
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: false
+      volumes:
+        - name: script-volume
+          configMap:
+            name: configmap
+            items:
+              - key: db.sh
+                path: db.sh
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+

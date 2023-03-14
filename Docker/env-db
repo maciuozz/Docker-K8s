@@ -1,0 +1,32 @@
+
+#Hubieramos podido crear un solo fichero para las variables de entorno pero para la legibilidad del codigo y para
+#diferenciar bien entre las variables estandares de MYSQL y las variables de configuracion he creado 2 ficheros.
+#Si hubiera sido 1 solo fichero tendria que ser como en el ejemplo de abajo donde el unico nombre de variable que 
+#se puede elegir es MYSQL_HOSTAPP y tiene que ser != MYSQL_HOST.
+
+#MYSQL_ROOT_PASSWORD=root1234
+#MYSQL_DATABASE=contador-db
+#MYSQL_USER=flaskuser
+#MYSQL_PASSWORD=patodegoma
+#MYSQL_HOSTAPP=db01
+
+#En la aplicacion app.py seria:
+
+#app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER', 'flaskuser')         
+#app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD', 'patodegoma') 
+#app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOSTAPP', 'db01')         
+#app.config['MYSQL_DATABASE'] = os.environ.get('MYSQL_DATABASE', 'contador-db')
+
+
+#Variables estandares del CLI de MYSQL por lo que no se pueden cambiar los nombres.
+MYSQL_ROOT_PASSWORD=root1234
+MYSQL_DATABASE=contador-db
+MYSQL_USER=flaskuser
+MYSQL_PASSWORD=patodegoma
+
+
+
+
+ 
+
+

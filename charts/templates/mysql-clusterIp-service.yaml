@@ -1,0 +1,19 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops7.fullname" . }}-mysql-clusterip
+  labels:
+    {{- include "devops7.labels" . | nindent 4 }}
+    layer: mysql-service
+spec:
+  type: ClusterIP
+  ports:
+  - name: mysql
+    port: 3306
+    targetPort: 3306
+  selector:
+    {{- include "devops7.selectorLabels" . | nindent 4 }}
+    layer: mysql
+
+
